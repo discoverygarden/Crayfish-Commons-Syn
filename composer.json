@@ -6,6 +6,7 @@
         "namshi/jose": "^7.2"
     },
     "require-dev": {
+        "islandora/crayfish-commons": "^4",
         "phpspec/prophecy-phpunit": "^2.0",
         "sebastian/phpcpd": "^6.0",
         "squizlabs/php_codesniffer": "^3.0",
