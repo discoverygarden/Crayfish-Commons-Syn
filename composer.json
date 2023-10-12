@@ -1,6 +1,7 @@
 {
     "name": "discoverygarden/crayfish-commons-syn",
     "description": "Islandora Crayfish Syn integration",
+    "type": "symfony-bundle",
     "require": {
         "ext-dom": "*",
         "ext-openssl": "*",

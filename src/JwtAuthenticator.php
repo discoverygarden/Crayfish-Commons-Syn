@@ -32,9 +32,22 @@ class JwtAuthenticator extends AbstractAuthenticator implements LoggerAwareInter
       'exp',
     ];
 
+    /**
+     * Associative array mapping site URLs to related properties.
+     * @var array[]
+     */
     protected array $sites;
+
+    /**
+     * Associative array mapping static tokens to their properties.
+     *
+     * @var array[]
+     */
     protected array $staticTokens;
 
+    /**
+     * Constructor.
+     */
     public function __construct(
         protected SettingsParserInterface $settingsParser,
         protected JwtFactoryInterface $jwtFactory,

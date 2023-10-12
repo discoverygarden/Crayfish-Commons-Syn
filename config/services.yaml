@@ -3,16 +3,17 @@ parameters:
   crayfish_commons_syn.config_xml: assets/default_syn.xml
 services:
   crayfish_commons_syn.settings_parser:
+    public: false
     class: Islandora\Crayfish\Commons\Syn\SettingsParser
     constructor: create
     arguments:
       - '%crayfish_commons_syn.config_xml%'
-  crayfish_commons_syn.static_token_authenticator:
-    class: Islandora\Crayfish\Commons\Syn\StaticTokenAuthenticator
-    arguments:
-      - '@crayfish_commons_syn.settings_parser'
-  crayfish_commons_syn.key_loader:
-    class:
-  crayfish_commons_syn.jwt_authenticator:
+  crayfish_commons_syn.jwt.factory:
+    public: false
+    class: Islandora\Crayfish\Commons\Syn\JwtFactory
+  crayfish_commons_syn.jwt.authenticator:
+    public: true
     class: Islandora\Crayfish\Commons\Syn\JwtAuthenticator
     arguments:
+      - '@crayfish_commons_syn.settings_parser'
+      - '@crayfish_commons_syn.jwt.factory'
