@@ -3,7 +3,10 @@
     "description": "Islandora Crayfish Syn integration",
     "require": {
         "psr/log": "^1.0.1",
-        "namshi/jose": "^7.2"
+        "namshi/jose": "^7.2",
+        "lexik/jwt-authentication-bundle": "^2.18",
+        "ext-simplexml": "*",
+        "ext-openssl": "*"
     },
     "require-dev": {
         "islandora/crayfish-commons": "^4",
@@ -14,7 +17,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Islandora\\Crayfish\\Commons\\": ""
+            "Islandora\\Crayfish\\Commons\\Syn": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Islandora\\Crayfish\\Commons\\Syn\\Tests": "tests/"
         }
     },
     "scripts": {

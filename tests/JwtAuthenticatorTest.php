@@ -1,6 +1,6 @@
 <?php
 
-namespace Islandora\Crayfish\Commons\Tests\Syn;
+namespace Islandora\Crayfish\Commons\Syn\Tests;
 
 use Islandora\Crayfish\Commons\Syn\JwtAuthenticator;
 use Islandora\Crayfish\Commons\Syn\JwtFactory;

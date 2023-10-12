@@ -2,62 +2,51 @@
 
 namespace Islandora\Crayfish\Commons\Syn;
 
-use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
-use SimpleXMLElement;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 
 /**
  * Reads Syn XML Settings file
  *
  * @package Islandora\Crayfish\Commons\Syn
  */
-class SettingsParser
-{
-    /**
-     * @var SimpleXMLElement
-     */
-    protected $xml;
+class SettingsParser implements LoggerAwareInterface, SettingsParserInterface {
+
+    use LoggerAwareTrait;
 
     /**
-     * @var LoggerInterface
+     * Root XML element.
+     *
+     * @var \SimpleXMLElement
      */
-    protected $logger;
+    protected \SimpleXMLElement $xml;
 
     /**
      * @var bool
      */
-    protected $valid;
+    protected bool $valid;
 
     /**
-     * SettingsParser constructor.
-     *
-     * @param string $xml
-     * @param LoggerInterface $logger
+     * Constructor.
      */
-    public function __construct($xml, LoggerInterface $logger = null)
-    {
-        if ($logger == null) {
-            $this->logger = new NullLogger();
-        } else {
-            $this->logger = $logger;
+    public function __construct(string $xml) {
+        $parsed = simplexml_load_string($xml);
+        if (!$parsed) {
+          throw new \InvalidArgumentException('The XML could not be parsed.');
         }
-
-        $this->xml = simplexml_load_string($xml);
+        $this->xml = $parsed;
         $this->valid = true;
 
-        if (!$this->xml || $this->xml->getName() != 'config') {
-            $this->valid = false;
-            return;
+        if ($this->xml->getName() != 'config') {
+            throw new \InvalidArgumentException('The root element is not the expect "config" element in the XML.');
         }
 
-        if (!$this->xml || $this->xml['version'] != '1') {
-            $this->valid = false;
-            return;
+        if ($this->xml['version'] != '1') {
+            throw new \InvalidArgumentException('Failed to find the "version" attribute in the XML.');
         }
     }
 
-    protected function getKey(SimpleXMLElement $site)
-    {
+    protected function getKey(\SimpleXMLElement $site) : false|string {
         if (!empty($site['path'])) {
             if (!file_exists($site['path'])) {
                 $this->logger->error('Key file does not exist.');
@@ -72,8 +61,7 @@ class SettingsParser
         return $key;
     }
 
-    protected function parseRsaSite(SimpleXMLElement $site)
-    {
+    protected function parseRsaSite(\SimpleXMLElement $site) : false|array {
         $key = $this->getKey($site);
         if ($key === false) {
             return false;
@@ -96,8 +84,7 @@ class SettingsParser
         ];
     }
 
-    protected function parseHmacSite(SimpleXMLElement $site)
-    {
+    protected function parseHmacSite(\SimpleXMLElement $site) : false|array {
         $key = $this->getKey($site);
         if ($key === false) {
             return false;
@@ -122,8 +109,7 @@ class SettingsParser
         ];
     }
 
-    protected function parseSite(SimpleXMLElement $site)
-    {
+    protected function parseSite(\SimpleXMLElement $site) : false|array {
         // Needs either key or path
         if (!empty($site['path']) == !empty(trim($site->__toString()))) {
             $this->logger->error("Only one of path or key must be defined.");
@@ -164,8 +150,7 @@ class SettingsParser
         }
     }
 
-    protected function parseToken(SimpleXMLElement $token)
-    {
+    protected function parseToken(\SimpleXMLElement $token) : false|array {
         if (empty($token->__toString())) {
             $this->logger->error("Token cannot be empty.");
             return false;
@@ -193,17 +178,9 @@ class SettingsParser
     }
 
     /**
-     * Get an array of sites from the configuration file.
-     *
-     * @return array
-     *   Each site is keyed with its url. Each sites array contains:
-     *   - algorithm
-     *   - key
-     *   - url
-     *   - default
+     * {@inheritDoc}
      */
-    public function getSites()
-    {
+    public function getSites() : array {
         $sites = [];
         $defaultSet = false;
         if (!$this->getValid()) {
@@ -226,16 +203,9 @@ class SettingsParser
     }
 
     /**
-     * Get an array of static tokens from the configuration file.
-     *
-     * @return array
-     *   Each tokens entry is keyed with its token value. Each token array contains:
-     *   - token
-     *   - user
-     *   - roles
+     * {@inheritDoc}
      */
-    public function getStaticTokens()
-    {
+    public function getStaticTokens() : array {
         $tokens = [];
         $sites = [];
         if (!$this->getValid()) {
@@ -257,8 +227,7 @@ class SettingsParser
      *
      * @return bool
      */
-    public function getValid()
-    {
+    public function getValid() : bool {
         return $this->valid;
     }
 }
