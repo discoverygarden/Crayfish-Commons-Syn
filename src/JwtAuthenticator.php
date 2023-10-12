@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
+use Symfony\Component\Security\Core\User\InMemoryUser;
 use Symfony\Component\Security\Http\Authenticator\AbstractAuthenticator;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
@@ -31,12 +32,17 @@ class JwtAuthenticator extends AbstractAuthenticator implements LoggerAwareInter
       'exp',
     ];
 
+    protected array $sites;
+    protected array $staticTokens;
+
     public function __construct(
         protected SettingsParserInterface $settingsParser,
         protected JwtFactoryInterface $jwtFactory,
     ) {
+        $this->sites = $this->settingsParser->getSites();
+        $this->staticTokens = $this->settingsParser->getStaticTokens();
     }
-    
+
     /**
      * Extract credentials from the request.
      *
@@ -102,7 +108,7 @@ class JwtAuthenticator extends AbstractAuthenticator implements LoggerAwareInter
     {
         // If this is a static token then no more verification needed
         if ($credentials['jwt'] === null) {
-            $this->logger->info('Logged in with static token: ' . $credentials['name']);
+            $this->logger->info('Logged in with static token: {0}', [$credentials['name']]);
             return;
         }
 
@@ -144,9 +150,9 @@ class JwtAuthenticator extends AbstractAuthenticator implements LoggerAwareInter
     /**
      * {@inheritdoc}
      */
-    public function onAuthenticationSuccess(Request $request, TokenInterface $token, $providerKey) : ?Response
+    public function onAuthenticationSuccess(Request $request, TokenInterface $token, $firewallName) : ?Response
     {
-      // on success, let the request continue
+        // on success, let the request continue
         return null;
     }
 
@@ -156,7 +162,7 @@ class JwtAuthenticator extends AbstractAuthenticator implements LoggerAwareInter
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception) : ?Response
     {
         $data = array(
-        'message' => $exception->getMessageKey(),
+            'message' => $exception->getMessageKey(),
         );
         return new JsonResponse($data, 403);
     }
@@ -166,7 +172,7 @@ class JwtAuthenticator extends AbstractAuthenticator implements LoggerAwareInter
      */
     public function supports(Request $request) : ?bool
     {
-      // Check headers
+        // Check headers
         $token = $request->headers->get(static::HEADER);
         if (!$token) {
             $this->logger->info('Token missing');
@@ -187,8 +193,11 @@ class JwtAuthenticator extends AbstractAuthenticator implements LoggerAwareInter
         $credentials = $this->getCredentials($request);
         $this->checkCredentials($credentials);
 
-        $passport = new SelfValidatingPassport(new UserBadge($credentials['name']));
+        $passport = new SelfValidatingPassport(new UserBadge($credentials['name'], function ($name) use ($credentials) {
+            return new InMemoryUser($name, null, $credentials['roles']);
+        }));
         $passport->setAttribute('roles', $credentials['roles']);
         return $passport;
     }
+
 }

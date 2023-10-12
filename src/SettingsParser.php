@@ -2,18 +2,13 @@
 
 namespace Islandora\Crayfish\Commons\Syn;
 
-use Psr\Log\LoggerAwareInterface;
-use Psr\Log\LoggerAwareTrait;
-
 /**
  * Reads Syn XML Settings file
  *
  * @package Islandora\Crayfish\Commons\Syn
  */
-class SettingsParser implements LoggerAwareInterface, SettingsParserInterface
+class SettingsParser implements SettingsParserInterface
 {
-
-    use LoggerAwareTrait;
 
     /**
      * Root XML element.
@@ -55,12 +50,11 @@ class SettingsParser implements LoggerAwareInterface, SettingsParserInterface
         );
     }
 
-    protected function getKey(\SimpleXMLElement $site) : false|string
+    protected function getKey(\SimpleXMLElement $site) : string
     {
         if (!empty($site['path'])) {
             if (!file_exists($site['path'])) {
-                $this->logger->error('Key file does not exist.');
-                return false;
+                throw new \InvalidArgumentException("The key file ({$site['path']}) does not appear to exist.");
             } else {
                 $key = file_get_contents((string)$site['path']);
             }
@@ -71,22 +65,16 @@ class SettingsParser implements LoggerAwareInterface, SettingsParserInterface
         return $key;
     }
 
-    protected function parseRsaSite(\SimpleXMLElement $site) : false|array
+    protected function parseRsaSite(\SimpleXMLElement $site) : array
     {
         $key = $this->getKey($site);
-        if ($key === false) {
-            return false;
-        }
-
         if (!isset($site['encoding']) || $site['encoding'] != 'PEM') {
-            $this->logger->error("Incorrect encoding");
-            return false;
+            throw new \InvalidArgumentException('Incorrect encoding.');
         }
 
         $resource = openssl_pkey_get_public($key);
         if ($resource === false) {
-            $this->logger->error("Key invalid");
-            return false;
+            throw new \InvalidArgumentException('Invalid key.');
         }
 
         return [
@@ -95,23 +83,18 @@ class SettingsParser implements LoggerAwareInterface, SettingsParserInterface
         ];
     }
 
-    protected function parseHmacSite(\SimpleXMLElement $site) : false|array
+    protected function parseHmacSite(\SimpleXMLElement $site) : array
     {
         $key = $this->getKey($site);
-        if ($key === false) {
-            return false;
-        }
 
         if (!isset($site['encoding']) || !in_array($site['encoding'], ['base64', 'plain'])) {
-            $this->logger->error("Incorrect encoding");
-            return false;
+            throw new \InvalidArgumentException('Incorrect encoding.');
         }
 
         if ($site['encoding'] == 'base64') {
             $key = base64_decode($key, true);
             if ($key === false) {
-                $this->logger->error('Base64 Decode Failed');
-                return false;
+                throw new \InvalidArgumentException('Base64 decode failed; invalid base64 content?');
             }
         }
 
@@ -121,53 +104,43 @@ class SettingsParser implements LoggerAwareInterface, SettingsParserInterface
         ];
     }
 
-    protected function parseSite(\SimpleXMLElement $site) : false|array
+    protected function parseSite(\SimpleXMLElement $site) : array
     {
         // Needs either key or path
         if (!empty($site['path']) == !empty(trim($site->__toString()))) {
-            $this->logger->error("Only one of path or key must be defined.");
-            return false;
+            throw new \InvalidArgumentException('The "path" and "key" attributes are mutually-exclusive.');
         }
 
         // Check algorithm is correct and supported
         if (empty($site['algorithm'])) {
-            $this->logger->error("Must define an algorithm.");
-            return false;
+            throw new \InvalidArgumentException('No defined algorithm.');
         }
 
         $algorithm = $site['algorithm'];
         $rsa = in_array($algorithm, ['RS256', "RS384", "RS512"]);
         $hmac = in_array($algorithm, ['HS256', "HS384", "HS512"]);
-
-        $default = isset($site['default']) && strtolower($site['default']) == 'true';
-        if (empty($site['url']) && !$default) {
-            $this->logger->error("Must define a URL or set to default.");
-            return false;
-        }
-
         if ($rsa) {
             $siteReturn = $this->parseRsaSite($site);
         } elseif ($hmac) {
             $siteReturn = $this->parseHmacSite($site);
         } else {
-            $this->logger->error('Incorrect algorithm selection');
-            return false;
+            throw new \InvalidArgumentException('Invalid algorithm selection.');
         }
 
-        if ($siteReturn === false) {
-            return false;
-        } else {
-            $siteReturn['url'] = $default ? 'default' : (string)$site['url'];
-            $siteReturn['default'] = $default;
-            return $siteReturn;
+        $default = isset($site['default']) && strtolower($site['default']) == 'true';
+        if (empty($site['url']) && !$default) {
+            throw new \InvalidArgumentException('No URL defined and not defined as "default".');
         }
+
+        $siteReturn['url'] = $default ? 'default' : (string)$site['url'];
+        $siteReturn['default'] = $default;
+        return $siteReturn;
     }
 
-    protected function parseToken(\SimpleXMLElement $token) : false|array
+    protected function parseToken(\SimpleXMLElement $token) : array
     {
         if (empty($token->__toString())) {
-            $this->logger->error("Token cannot be empty.");
-            return false;
+            throw new \InvalidArgumentException('Token cannot be empty.');
         }
 
         $tokenString = trim($token->__toString());
@@ -204,13 +177,15 @@ class SettingsParser implements LoggerAwareInterface, SettingsParserInterface
         foreach ($this->xml->children() as $child) {
             if ($child->getName() == "site") {
                 $site = $this->parseSite($child);
-                if ($site !== false) {
-                    if ($defaultSet && $site['default']) {
-                        $this->logger->error('There can be only one default site.');
-                    } else {
-                        $sites[$site['url']] = $site;
-                        $defaultSet |= $site['default'];
-                    }
+                if ($defaultSet && $site['default']) {
+                    throw new \InvalidArgumentException(
+                        strtr('There can be only one "default" site. Duplicate found at !xpath', [
+                          '!xpath' => dom_import_simplexml($child)->getNodePath(),
+                        ])
+                    );
+                } else {
+                    $sites[$site['url']] = $site;
+                    $defaultSet = $defaultSet || $site['default'];
                 }
             }
         }
@@ -230,9 +205,7 @@ class SettingsParser implements LoggerAwareInterface, SettingsParserInterface
         foreach ($this->xml->children() as $child) {
             if ($child->getName() == "token") {
                 $token = $this->parseToken($child);
-                if ($token !== false) {
-                    $tokens[$token['token']] = $token;
-                }
+                $tokens[$token['token']] = $token;
             }
         }
         return $tokens;

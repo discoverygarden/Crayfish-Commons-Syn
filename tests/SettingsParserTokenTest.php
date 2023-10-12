@@ -17,9 +17,8 @@ class SettingsParserTokenTest extends AbstractCrayfishCommonsTestCase
   </token>
 </config>
 STRING;
-        $parser = new SettingsParser($testXml, $this->logger);
-        $tokens = $parser->getStaticTokens();
-        $this->assertEquals(0, count($tokens));
+        $this->expectException(\InvalidArgumentException::class);
+        $parser = new SettingsParser($testXml);
     }
 
     public function testTokenNoParams()

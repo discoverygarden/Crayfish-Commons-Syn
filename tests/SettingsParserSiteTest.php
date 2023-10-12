@@ -18,9 +18,8 @@ class SettingsParserSiteTest extends AbstractCrayfishCommonsTestCase
   </site>
 </config>
 STRING;
-        $parser = new SettingsParser($testXml, $this->logger);
-        $sites = $parser->getSites();
-        $this->assertEquals(0, count($sites));
+        $this->expectException(\InvalidArgumentException::class);
+        new SettingsParser($testXml);
     }
 
     public function hmacHelper($algorithm)
@@ -75,9 +74,8 @@ STRING;
   </site>
 </config>
 STRING;
-        $parser = new SettingsParser($testXml, $this->logger);
-        $sites = $parser->getSites();
-        $this->assertEquals(0, count($sites));
+        $this->expectException(\InvalidArgumentException::class);
+        (new SettingsParser($testXml))->getSites();
     }
 
     public function testOneSiteHmacInvalidEncoding()
@@ -89,9 +87,8 @@ STRING;
   </site>
 </config>
 STRING;
-        $parser = new SettingsParser($testXml, $this->logger);
-        $sites = $parser->getSites();
-        $this->assertEquals(0, count($sites));
+        $this->expectException(\InvalidArgumentException::class);
+        (new SettingsParser($testXml))->getSites();
     }
 
     public function testOneSiteHmacFileKey()
@@ -122,9 +119,9 @@ STRING;
   <site url='http://test.com' algorithm='HS256' encoding='plain' path="$file"/>
 </config>
 STRING;
-        $parser = new SettingsParser($testXml, $this->logger);
+        $this->expectException(\InvalidArgumentException::class);
+        $parser = new SettingsParser($testXml);
         $sites = $parser->getSites();
-        $this->assertEquals(0, count($sites));
     }
 
     public function testNoKeyOrPath()
@@ -134,9 +131,9 @@ STRING;
   <site url='http://test.com' algorithm='HS256' encoding='plain'/>
 </config>
 STRING;
+        $this->expectException(\InvalidArgumentException::class);
         $parser = new SettingsParser($testXml, $this->logger);
-        $sites = $parser->getSites();
-        $this->assertEquals(0, count($sites));
+        $parser->getSites();
     }
 
     public function testNoUrl()
@@ -148,9 +145,9 @@ STRING;
   </site>
 </config>
 STRING;
-        $parser = new SettingsParser($testXml, $this->logger);
-        $sites = $parser->getSites();
-        $this->assertEquals(0, count($sites));
+        $this->expectException(\InvalidArgumentException::class);
+        $parser = new SettingsParser($testXml);
+        $parser->getSites();
     }
 
     public function testNoUrlDefault()
@@ -162,7 +159,7 @@ STRING;
   </site>
 </config>
 STRING;
-        $parser = new SettingsParser($testXml, $this->logger);
+        $parser = new SettingsParser($testXml);
         $sites = $parser->getSites();
         $this->assertEquals(1, count($sites));
     }
@@ -176,9 +173,9 @@ STRING;
   </site>
 </config>
 STRING;
+        $this->expectException(\InvalidArgumentException::class);
         $parser = new SettingsParser($testXml, $this->logger);
         $sites = $parser->getSites();
-        $this->assertEquals(0, count($sites));
     }
 
     public function rsaHelper($algorithm)
@@ -219,9 +216,9 @@ STRING;
   </site>
 </config>
 STRING;
+        $this->expectException(\InvalidArgumentException::class);
         $parser = new SettingsParser($testXml, $this->logger);
-        $sites = $parser->getSites();
-        $this->assertEquals(0, count($sites));
+        $parser->getSites();
     }
 
     public function testRsaBadEncoding()
@@ -238,18 +235,18 @@ KOT4nEF7MBGyOSP3KQIDAQAB
   </site>
 </config>
 STRING;
-        $parser = new SettingsParser($testXml, $this->logger);
-        $sites = $parser->getSites();
-        $this->assertEquals(0, count($sites));
+        $this->expectException(\InvalidArgumentException::class);
+        $parser = new SettingsParser($testXml);
+        $parser->getSites();
     }
 
     public function testEmptyString()
     {
         $testXml =  <<<STRING
 STRING;
-        $parser = new SettingsParser($testXml, $this->logger);
-        $sites = $parser->getSites();
-        $this->assertEquals(0, count($sites));
+        $this->expectException(\InvalidArgumentException::class);
+        $parser = new SettingsParser($testXml);
+        $parser->getSites();
     }
 
     public function testIncorrectTags()
@@ -257,8 +254,7 @@ STRING;
         $testXml =  <<<STRING
 <foo></foo>
 STRING;
-        $parser = new SettingsParser($testXml, $this->logger);
-        $sites = $parser->getSites();
-        $this->assertEquals(0, count($sites));
+        $this->expectException(\InvalidArgumentException::class);
+        new SettingsParser($testXml);
     }
 }

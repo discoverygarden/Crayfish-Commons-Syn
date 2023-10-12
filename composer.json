@@ -2,8 +2,9 @@
     "name": "discoverygarden/crayfish-commons-syn",
     "description": "Islandora Crayfish Syn integration",
     "require": {
-        "ext-simplexml": "*",
+        "ext-dom": "*",
         "ext-openssl": "*",
+        "ext-simplexml": "*",
         "psr/log": "^1.0.1",
         "namshi/jose": "^7.2",
         "lexik/jwt-authentication-bundle": "^2.18",
@@ -14,7 +15,8 @@
         "mikey179/vfsstream": "^1.6",
         "phpspec/prophecy-phpunit": "^2.0",
         "sebastian/phpcpd": "^6.0",
-        "squizlabs/php_codesniffer": "^3.0"
+        "squizlabs/php_codesniffer": "^3.0",
+        "symfony/phpunit-bridge": "5.4.*"
     },
     "autoload": {
         "psr-4": {
