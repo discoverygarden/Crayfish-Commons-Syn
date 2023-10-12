@@ -2,156 +2,193 @@
 
 namespace Islandora\Crayfish\Commons\Syn;
 
-use Lexik\Bundle\JWTAuthenticationBundle\Security\Authenticator\JWTAuthenticator as BaseAuthenticator;
-use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
-use Lexik\Bundle\JWTAuthenticationBundle\TokenExtractor\TokenExtractorInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Security\Core\User\UserProviderInterface;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
+use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Security\Core\Exception\AuthenticationException;
+use Symfony\Component\Security\Http\Authenticator\AbstractAuthenticator;
+use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
+use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
+use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPassport;
 
-class JwtAuthenticator extends BaseAuthenticator implements LoggerAwareInterface
+class JwtAuthenticator extends AbstractAuthenticator implements LoggerAwareInterface
 {
     use LoggerAwareTrait;
 
+    const HEADER = 'Authorization';
+    const PREFIX = 'bearer ';
+
+    const REQUIRED_CLAIMS = [
+      'webid',
+      'iss',
+      'sub',
+      'roles',
+      'iat',
+      'exp',
+    ];
+
     public function __construct(
-      JWTTokenManagerInterface $jwtManager,
-      EventDispatcherInterface $eventDispatcher,
-      TokenExtractorInterface $tokenExtractor,
-      UserProviderInterface $userProvider,
-      TranslatorInterface $translator = null) {
-      parent::__construct($jwtManager, $eventDispatcher, $tokenExtractor, $userProvider, $translator);
+        protected SettingsParserInterface $settingsParser,
+        protected JwtFactoryInterface $jwtFactory,
+    ) {
+    }
+    
+    /**
+     * Extract credentials from the request.
+     *
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     *   The request from which to extract credentials.
+     *
+     * @return array
+     *   An array of credential info, including:
+     *    - token: The raw token.
+     *    - jwt: The parsed JWT.
+     *    - name: The name of the user being auth'd.
+     *    - roles: The roles as which the user is being auth'd.
+     */
+    protected function getCredentials(Request $request) : array
+    {
+        // Check headers
+        $token = $request->headers->get(static::HEADER);
+
+        // Chop off the leading "bearer " from the token
+        $token = substr($token, strlen(static::PREFIX));
+        $this->logger->debug("Token: $token");
+
+        // Check if this is a static token
+        if (isset($this->staticTokens[$token])) {
+            $staticToken = $this->staticTokens[$token];
+            return [
+                'token' => $staticToken['token'],
+                'jwt' => null,
+                'name' => $staticToken['user'],
+                'roles' => $staticToken['roles']
+            ];
+        }
+
+        // Decode token
+        try {
+            $jwt = $this->jwtFactory->load($token);
+        } catch (\InvalidArgumentException $exception) {
+            throw new UnauthorizedHttpException('', 'Invalid token.', $exception);
+        }
+
+        // Check correct properties
+        $payload = $jwt->getPayload();
+
+        return [
+            'token' => $token,
+            'jwt' => $jwt,
+            'name' => $payload['sub'] ?? null,
+            'roles' => $payload['roles'] ?? null,
+        ];
     }
 
+    /**
+     * Check the extracted credentials.
+     *
+     * @param array $credentials
+     *   Array of credentials including:
+     *   - token: The raw token.
+     *   - jwt: The parsed JWT.
+     *   - name: The name of the user being auth'd.
+     *   - roles: The roles as which the user is being auth'd.
+     */
+    protected function checkCredentials(array $credentials) : void
+    {
+        // If this is a static token then no more verification needed
+        if ($credentials['jwt'] === null) {
+            $this->logger->info('Logged in with static token: ' . $credentials['name']);
+            return;
+        }
 
-//    /**
-//     * {@inheritdoc}
-//     */
-//    public function getCredentials(Request $request)
-//    {
-//        // Check headers
-//        $token = $request->headers->get('Authorization');
-//
-//        // Chop off the leading "bearer " from the token
-//        $token = substr($token, 7);
-//        $this->logger->debug("Token: $token");
-//
-//        // Check if this is a static token
-//        if (isset($this->staticTokens[$token])) {
-//            $staticToken = $this->staticTokens[$token];
-//            return [
-//                'token' => $staticToken['token'],
-//                'jwt' => null,
-//                'name' => $staticToken['user'],
-//                'roles' => $staticToken['roles']
-//            ];
-//        }
-//
-//        // Decode token
-//        try {
-//            $jwt = $this->jwtFactory->load($token);
-//        } catch (InvalidArgumentException $exception) {
-//            $this->logger->info('Invalid token. ' . $exception->getMessage());
-//            return [
-//              'token' => $token,
-//              'name' => null,
-//              'roles' => null,
-//            ];
-//        }
-//
-//        // Check correct properties
-//        $payload = $jwt->getPayload();
-//
-//        return [
-//            'token' => $token,
-//            'jwt' => $jwt,
-//            'name' => $payload['sub'] ?? null,
-//            'roles' => $payload['roles'] ?? null,
-//        ];
-//    }
-//
-//    /**
-//     * {@inheritdoc}
-//     */
-//    public function getUser($credentials, UserProviderInterface $userProvider)
-//    {
-//        return new JwtUser($credentials['name'], $credentials['roles']);
-//    }
-//
-//    /**
-//     * {@inheritdoc}
-//     */
-//    public function checkCredentials($credentials, UserInterface $user)
-//    {
-//        if ($credentials['name'] === null) {
-//            // No name means the token was invalid.
-//            $this->logger->info("Token was invalid:");
-//            return false;
-//        }
-//
-//        // If this is a static token then no more verification needed
-//        if ($credentials['jwt'] === null) {
-//            $this->logger->info('Logged in with static token: ' . $credentials['name']);
-//            return true;
-//        }
-//
-//        $jwt = $credentials['jwt'];
-//        $payload = $jwt->getPayload();
-//        // Check and warn of all missing claims before rejecting.
-//        $missing_claim = false;
-//        if (!isset($payload['webid'])) {
-//            $this->logger->info('Token missing webid');
-//            $missing_claim = true;
-//        }
-//        if (!isset($payload['iss'])) {
-//            $this->logger->info('Token missing iss');
-//            $missing_claim = true;
-//        }
-//        if (!isset($payload['sub'])) {
-//            $this->logger->info('Token missing sub');
-//            $missing_claim = true;
-//        }
-//        if (!isset($payload['roles'])) {
-//            $this->logger->info('Token missing roles');
-//            $missing_claim = true;
-//        }
-//        if (!isset($payload['iat'])) {
-//            $this->logger->info('Token missing iat');
-//            $missing_claim = true;
-//        }
-//        if (!isset($payload['exp'])) {
-//            $this->logger->info('Token missing exp');
-//            $missing_claim = true;
-//        }
-//        if ($missing_claim) {
-//            // If any claim is missing
-//            return false;
-//        }
-//        if ($jwt->isExpired()) {
-//            $this->logger->info('Token expired');
-//            return false;
-//        }
-//
-//        $url = $payload['iss'];
-//        if (isset($this->sites[$url])) {
-//            $site = $this->sites[$url];
-//        } elseif (isset($this->sites['default'])) {
-//            $site = $this->sites['default'];
-//        } else {
-//            $this->logger->info('No site matches');
-//            return false;
-//        }
-//
-//        return $jwt->isValid($site['key'], $site['algorithm']);
-//    }
-//
-//    protected function getTokenExtractor() : TokenExtractorInterface
-//    {
-//        /** @var \Lexik\Bundle\JWTAuthenticationBundle\TokenExtractor\ChainTokenExtractor $chain_extractor */
-//        $chain_extractor = parent::getTokenExtractor();
-//
-//        return $chain_extractor;
-//    }
+        $jwt = $credentials['jwt'];
+        $payload = $jwt->getPayload();
+
+        // Check and warn of all missing claims before rejecting.
+        $missing_claims = [];
+        foreach (static::REQUIRED_CLAIMS as $claim) {
+            if (!isset($payload[$claim])) {
+                $missing_claims[] = $claim;
+            }
+        }
+
+        if ($missing_claims) {
+            // If any claim is missing
+            throw new UnauthorizedHttpException('', strtr('Token missing claim(s): @claims', [
+              '@claims' => implode(', ', $missing_claims),
+            ]));
+        }
+        if ($jwt->isExpired()) {
+            throw new UnauthorizedHttpException('', 'Token has expired.');
+        }
+
+        $url = $payload['iss'];
+        if (isset($this->sites[$url])) {
+            $site = $this->sites[$url];
+        } elseif (isset($this->sites['default'])) {
+            $site = $this->sites['default'];
+        } else {
+            throw new UnauthorizedHttpException('', 'Failed to identify token key.');
+        }
+
+        if (!$jwt->isValid($site['key'], $site['algorithm'])) {
+            throw new UnauthorizedHttpException('', 'The token\'s signature does not appear to be valid.');
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function onAuthenticationSuccess(Request $request, TokenInterface $token, $providerKey) : ?Response
+    {
+      // on success, let the request continue
+        return null;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function onAuthenticationFailure(Request $request, AuthenticationException $exception) : ?Response
+    {
+        $data = array(
+        'message' => $exception->getMessageKey(),
+        );
+        return new JsonResponse($data, 403);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function supports(Request $request) : ?bool
+    {
+      // Check headers
+        $token = $request->headers->get(static::HEADER);
+        if (!$token) {
+            $this->logger->info('Token missing');
+            return false;
+        }
+        if (!str_starts_with(strtolower($token), static::PREFIX)) {
+            $this->logger->info('Token malformed');
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function authenticate(Request $request) : Passport
+    {
+        $credentials = $this->getCredentials($request);
+        $this->checkCredentials($credentials);
+
+        $passport = new SelfValidatingPassport(new UserBadge($credentials['name']));
+        $passport->setAttribute('roles', $credentials['roles']);
+        return $passport;
+    }
 }

@@ -10,7 +10,8 @@ use Psr\Log\LoggerAwareTrait;
  *
  * @package Islandora\Crayfish\Commons\Syn
  */
-class SettingsParser implements LoggerAwareInterface, SettingsParserInterface {
+class SettingsParser implements LoggerAwareInterface, SettingsParserInterface
+{
 
     use LoggerAwareTrait;
 
@@ -29,10 +30,11 @@ class SettingsParser implements LoggerAwareInterface, SettingsParserInterface {
     /**
      * Constructor.
      */
-    public function __construct(string $xml) {
+    public function __construct(string $xml)
+    {
         $parsed = simplexml_load_string($xml);
         if (!$parsed) {
-          throw new \InvalidArgumentException('The XML could not be parsed.');
+            throw new \InvalidArgumentException('The XML could not be parsed.');
         }
         $this->xml = $parsed;
         $this->valid = true;
@@ -46,7 +48,15 @@ class SettingsParser implements LoggerAwareInterface, SettingsParserInterface {
         }
     }
 
-    protected function getKey(\SimpleXMLElement $site) : false|string {
+    public static function create(string $path) : SettingsParserInterface
+    {
+        return new static(
+            file_get_contents($path)
+        );
+    }
+
+    protected function getKey(\SimpleXMLElement $site) : false|string
+    {
         if (!empty($site['path'])) {
             if (!file_exists($site['path'])) {
                 $this->logger->error('Key file does not exist.');
@@ -61,7 +71,8 @@ class SettingsParser implements LoggerAwareInterface, SettingsParserInterface {
         return $key;
     }
 
-    protected function parseRsaSite(\SimpleXMLElement $site) : false|array {
+    protected function parseRsaSite(\SimpleXMLElement $site) : false|array
+    {
         $key = $this->getKey($site);
         if ($key === false) {
             return false;
@@ -84,7 +95,8 @@ class SettingsParser implements LoggerAwareInterface, SettingsParserInterface {
         ];
     }
 
-    protected function parseHmacSite(\SimpleXMLElement $site) : false|array {
+    protected function parseHmacSite(\SimpleXMLElement $site) : false|array
+    {
         $key = $this->getKey($site);
         if ($key === false) {
             return false;
@@ -109,7 +121,8 @@ class SettingsParser implements LoggerAwareInterface, SettingsParserInterface {
         ];
     }
 
-    protected function parseSite(\SimpleXMLElement $site) : false|array {
+    protected function parseSite(\SimpleXMLElement $site) : false|array
+    {
         // Needs either key or path
         if (!empty($site['path']) == !empty(trim($site->__toString()))) {
             $this->logger->error("Only one of path or key must be defined.");
@@ -150,7 +163,8 @@ class SettingsParser implements LoggerAwareInterface, SettingsParserInterface {
         }
     }
 
-    protected function parseToken(\SimpleXMLElement $token) : false|array {
+    protected function parseToken(\SimpleXMLElement $token) : false|array
+    {
         if (empty($token->__toString())) {
             $this->logger->error("Token cannot be empty.");
             return false;
@@ -180,7 +194,8 @@ class SettingsParser implements LoggerAwareInterface, SettingsParserInterface {
     /**
      * {@inheritDoc}
      */
-    public function getSites() : array {
+    public function getSites() : array
+    {
         $sites = [];
         $defaultSet = false;
         if (!$this->getValid()) {
@@ -205,7 +220,8 @@ class SettingsParser implements LoggerAwareInterface, SettingsParserInterface {
     /**
      * {@inheritDoc}
      */
-    public function getStaticTokens() : array {
+    public function getStaticTokens() : array
+    {
         $tokens = [];
         $sites = [];
         if (!$this->getValid()) {
@@ -227,7 +243,8 @@ class SettingsParser implements LoggerAwareInterface, SettingsParserInterface {
      *
      * @return bool
      */
-    public function getValid() : bool {
+    public function getValid() : bool
+    {
         return $this->valid;
     }
 }
