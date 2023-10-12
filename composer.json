@@ -8,8 +8,8 @@
         "ext-simplexml": "*",
         "psr/log": "^1.0.1",
         "namshi/jose": "^7.2",
-        "lexik/jwt-authentication-bundle": "^2.18",
-        "symfony/security-bundle": "5.4.*"
+        "symfony/security-bundle": "^5",
+        "symfony/flex": "^2"
     },
     "require-dev": {
         "islandora/crayfish-commons": "^4",
@@ -17,7 +17,7 @@
         "phpspec/prophecy-phpunit": "^2.0",
         "sebastian/phpcpd": "^6.0",
         "squizlabs/php_codesniffer": "^3.0",
-        "symfony/phpunit-bridge": "5.4.*"
+        "symfony/phpunit-bridge": "^5"
     },
     "autoload": {
         "psr-4": {
@@ -45,5 +45,10 @@
           "require": "5.4.*"
       }
     },
-    "license": "MIT"
+    "license": "MIT",
+    "config": {
+        "allow-plugins": {
+            "symfony/flex": true
+        }
+    }
 }
