@@ -16,9 +16,10 @@ class Configuration implements ConfigurationInterface
         $treeBuilder = new TreeBuilder('crayfish_commons_syn');
 
         $treeBuilder->getRootNode()
-        ->children()
-          ->scalarNode('config_xml')->defaultValue(__DIR__ . '/../../assets/default_syn.xml')->end()
-        ->end();
+          ->addDefaultsIfNotSet()
+          ->children()
+            ->scalarNode('config_xml')->defaultValue(__DIR__ . '/../../assets/default_syn.xml')->end()
+          ->end();
 
         return $treeBuilder;
     }
