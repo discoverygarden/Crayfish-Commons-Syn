@@ -1,13 +1,11 @@
 ---
-parameters:
-  crayfish_commons_syn.config_xml: assets/default_syn.xml
 services:
   crayfish_commons_syn.settings_parser:
     public: false
     class: Islandora\Crayfish\Commons\Syn\SettingsParser
     constructor: create
     arguments:
-      - '%crayfish_commons_syn.config_xml%'
+      - "assets/default_syn.xml"
   crayfish_commons_syn.jwt.factory:
     public: false
     class: Islandora\Crayfish\Commons\Syn\JwtFactory
