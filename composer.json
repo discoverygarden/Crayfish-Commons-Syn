@@ -9,7 +9,7 @@
         "psr/log": "^1.0.1",
         "namshi/jose": "^7.2",
         "symfony/security-bundle": "^5",
-        "symfony/flex": "^2"
+        "symfony/flex": "^1 || ^2"
     },
     "require-dev": {
         "islandora/crayfish-commons": "^4",
