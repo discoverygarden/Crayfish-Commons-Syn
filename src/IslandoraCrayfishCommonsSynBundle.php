@@ -2,7 +2,6 @@
 
 namespace Islandora\Crayfish\Commons\Syn;
 
-use Islandora\Crayfish\Commons\Syn\DependencyInjection\CrayfishCommonsSynExtension;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 
 /**
@@ -13,8 +12,5 @@ use Symfony\Component\HttpKernel\Bundle\Bundle;
  */
 class IslandoraCrayfishCommonsSynBundle extends Bundle
 {
-    protected function getContainerExtensionClass()
-    {
-        return CrayfishCommonsSynExtension::class;
-    }
+
 }

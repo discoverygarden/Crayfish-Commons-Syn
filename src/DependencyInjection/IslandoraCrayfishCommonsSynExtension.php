@@ -7,7 +7,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 
-class CrayfishCommonsSynExtension extends Extension
+class IslandoraCrayfishCommonsSynExtension extends Extension
 {
 
   /**
@@ -23,7 +23,7 @@ class CrayfishCommonsSynExtension extends Extension
 
         $config = $this->processConfiguration(new Configuration(), $configs);
 
-        $container->getDefinition('crayfish_commons_syn.settings_parser')
-          ->replaceArgument(0, $config['crayfish_commons_syn']['config_xml']);
+        $container->getDefinition('islandora_crayfish_commons_syn.settings_parser')
+          ->replaceArgument(0, $config['islandora_crayfish_commons_syn']['config_xml']);
     }
 }

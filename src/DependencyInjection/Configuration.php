@@ -13,7 +13,7 @@ class Configuration implements ConfigurationInterface
    */
     public function getConfigTreeBuilder() : TreeBuilder
     {
-        $treeBuilder = new TreeBuilder('crayfish_commons_syn');
+        $treeBuilder = new TreeBuilder('islandora_crayfish_commons_syn');
 
         $treeBuilder->getRootNode()
           ->addDefaultsIfNotSet()

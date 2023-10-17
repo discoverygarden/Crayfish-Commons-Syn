@@ -12,16 +12,16 @@ services:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
 
-    crayfish_commons_syn.settings_parser:
+    islandora_crayfish_commons_syn.settings_parser:
         public: false
         class: Islandora\Crayfish\Commons\Syn\SettingsParser
         constructor: create
         arguments:
           - "assets/default_syn.xml"
-    crayfish_commons_syn.jwt.factory:
+    islandora_crayfish_commons_syn.jwt.factory:
         public: false
         class: Islandora\Crayfish\Commons\Syn\JwtFactory
-    crayfish_commons_syn.jwt.authenticator:
+    islandora_crayfish_commons_syn.jwt.authenticator:
         public: true
         class: Islandora\Crayfish\Commons\Syn\JwtAuthenticator
         arguments:
