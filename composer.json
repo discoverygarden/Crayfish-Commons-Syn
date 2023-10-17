@@ -12,7 +12,7 @@
         "symfony/flex": "^1 || ^2"
     },
     "require-dev": {
-        "islandora/crayfish-commons": "^4",
+        "islandora/crayfish-commons": "^3 || ^4",
         "mikey179/vfsstream": "^1.6",
         "phpspec/prophecy-phpunit": "^2.0",
         "sebastian/phpcpd": "^6.0",
