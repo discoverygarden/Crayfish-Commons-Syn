@@ -8,9 +8,9 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 class Configuration implements ConfigurationInterface
 {
 
-  /**
-   * {@inheritDoc}
-   */
+    /**
+     * {@inheritDoc}
+     */
     public function getConfigTreeBuilder() : TreeBuilder
     {
         $treeBuilder = new TreeBuilder('islandora_crayfish_commons_syn');

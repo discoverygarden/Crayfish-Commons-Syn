@@ -10,9 +10,9 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 class IslandoraCrayfishCommonsSynExtension extends Extension
 {
 
-  /**
-   * @inheritDoc
-   */
+    /**
+     * @inheritDoc
+     */
     public function load(array $configs, ContainerBuilder $container)
     {
         $loader = new YamlFileLoader(
@@ -24,6 +24,6 @@ class IslandoraCrayfishCommonsSynExtension extends Extension
         $config = $this->processConfiguration(new Configuration(), $configs);
 
         $container->getDefinition('islandora_crayfish_commons_syn.settings_parser')
-          ->replaceArgument(0, $config['islandora_crayfish_commons_syn']['config_xml']);
+          ->replaceArgument(0, $config['config_xml']);
     }
 }
