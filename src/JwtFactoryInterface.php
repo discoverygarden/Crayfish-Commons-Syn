@@ -16,5 +16,4 @@ interface JwtFactoryInterface
      *   The loaded/parsed token.
      */
     public function load(string $jwt) : JWS;
-
 }

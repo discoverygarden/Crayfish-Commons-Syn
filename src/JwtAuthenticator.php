@@ -212,5 +212,4 @@ class JwtAuthenticator extends AbstractAuthenticator implements LoggerAwareInter
         $passport->setAttribute('roles', $credentials['roles']);
         return $passport;
     }
-
 }

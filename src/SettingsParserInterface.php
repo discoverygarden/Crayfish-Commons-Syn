@@ -2,7 +2,8 @@
 
 namespace Islandora\Crayfish\Commons\Syn;
 
-interface SettingsParserInterface {
+interface SettingsParserInterface
+{
 
     /**
      * Get an array of sites from the configuration file.
@@ -26,5 +27,4 @@ interface SettingsParserInterface {
      *   - roles
      */
     public function getStaticTokens() : array;
-
 }
