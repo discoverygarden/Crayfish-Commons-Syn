@@ -19,7 +19,30 @@ composer require discoverygarden/crayfish-commons-syn
 ```
 
 ## Configuration
-There is no related configuration as it serves as a dependency for  microservices.
+
+Into your main `config/packages/security.yaml` (or equivalent):
+
+* Ensure/set `security.enable_authenticator_manager` to `true`
+* Ensure a user provider exists:
+    ```yaml
+    security:
+      [...]
+      providers:
+        users_in_memory:
+          memory: ~
+    ```
+
+* Have the main firewall use the user provider, and reference our custom authenticator:
+    ```yaml
+    security:
+      [...]
+      firewalls:
+        main:
+          anonymous: false
+          provider: users_in_memory
+          custom_authenticators:
+            - islandora_crayfish_commons_syn.jwt.authenticator
+    ```
 
 ## Documentation
 
