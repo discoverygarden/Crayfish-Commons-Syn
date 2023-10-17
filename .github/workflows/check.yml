@@ -1,0 +1,99 @@
+---
+name: Code Lint/PHPUnit checks
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+env:
+  PHP_EXTENSIONS: >-
+    ctype,
+    curl,
+    fileinfo,
+    gd,
+    iconv,
+    json,
+    mbstring,
+    openssl,
+    pdo,
+    phar,
+    simplexml,
+    sqlite3,
+    tokenizer,
+    xml,
+    zip
+
+jobs:
+  PHPUnit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version:
+          - '7.4'
+          - '8.1'
+          - '8.2'
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - name: Setup cache environment
+        id: extcache
+        uses: shivammathur/cache-extensions@v1
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          key: extcache-v1
+      - name: Restore cache extensions
+        id: extcacheactual
+        uses: actions/cache/restore@v3
+        with:
+          path: ${{ steps.extcache.outputs.dir }}
+          key: ${{ steps.extcache.outputs.key }}
+          restore-keys: ${{ steps.extcache.outputs.key }}
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        env:
+          COMPOSER_AUTH_JSON: |
+            {
+              "http-basic": {
+                "repo.packagist.com": {
+                  "username": "${{ fromJSON(secrets.PRIVATE_PACKAGIST_AUTH_ACCESS)['http-basic']['repo.packagist.com']['username'] }}",
+                  "password":  "${{ fromJSON(secrets.PRIVATE_PACKAGIST_AUTH_ACCESS)['http-basic']['repo.packagist.com']['password'] }}"
+                }
+              }
+            }
+        with:
+          php-version: ${{ matrix.php-versions }}
+          extensions: ${{ env.PHP_EXTENSIONS }}
+      - name: Save cache extensions
+        if: steps.extcacheactual.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: ${{ steps.extcache.outputs.dir }}
+          key: ${{ steps.extcache.outputs.key }}
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+      - name: Restore Composer Cache
+        id: composercacheactual
+        uses: actions/cache/restore@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+            composer-
+      - name: Install dependencies
+        run: composer install --dev --prefer-install=dist --no-progress --optimize-autoloader
+      - name: Save Composer Cache
+        if: steps.composercacheactual.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+      - name: Run tests
+        run: >
+          composer test
