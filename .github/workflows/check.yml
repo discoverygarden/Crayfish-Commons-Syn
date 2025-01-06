@@ -36,6 +36,7 @@ jobs:
           - '7.4'
           - '8.1'
           - '8.2'
+          - '8.3'
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -66,7 +67,7 @@ jobs:
               }
             }
         with:
-          php-version: ${{ matrix.php-versions }}
+          php-version: ${{ matrix.php-version }}
           extensions: ${{ env.PHP_EXTENSIONS }}
       - name: Save cache extensions
         if: steps.extcacheactual.outputs.cache-hit != 'true'
