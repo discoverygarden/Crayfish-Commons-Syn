@@ -17,13 +17,14 @@ services:
         class: Islandora\Crayfish\Commons\Syn\SettingsParser
         factory: [null, create]
         arguments:
-          - "assets/default_syn.xml"
-    islandora_crayfish_commons_syn.jwt.factory:
-        public: false
-        class: Islandora\Crayfish\Commons\Syn\JwtFactory
+            - "assets/default_syn.xml"
     islandora_crayfish_commons_syn.jwt.authenticator:
         public: true
         class: Islandora\Crayfish\Commons\Syn\JwtAuthenticator
         arguments:
-          - '@islandora_crayfish_commons_syn.settings_parser'
-          - '@islandora_crayfish_commons_syn.jwt.factory'
+            - '@islandora_crayfish_commons_syn.settings_parser'
+    islandora_crayfish_commons_syn.static_token.authenticator:
+        public: true
+        class: Islandora\Crayfish\Commons\Syn\StaticTokenAuthenticator
+        arguments:
+            - '@islandora_crayfish_commons_syn.settings_parser'

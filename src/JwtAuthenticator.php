@@ -2,6 +2,7 @@
 
 namespace Islandora\Crayfish\Commons\Syn;
 
+use Firebase\JWT\Key;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -18,10 +19,8 @@ use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPasspor
 
 class JwtAuthenticator extends AbstractAuthenticator implements LoggerAwareInterface
 {
+    use BearerTokenTrait;
     use LoggerAwareTrait;
-
-    const HEADER = 'Authorization';
-    const PREFIX = 'bearer ';
 
     const REQUIRED_CLAIMS = [
       'webid',
@@ -34,105 +33,28 @@ class JwtAuthenticator extends AbstractAuthenticator implements LoggerAwareInter
 
     /**
      * Associative array mapping site URLs to related properties.
+     *
      * @var array[]
      */
     protected array $sites;
 
     /**
-     * Associative array mapping static tokens to their properties.
-     *
-     * @var array[]
-     */
-    protected array $staticTokens;
-
-    /**
      * Constructor.
      */
     public function __construct(
-        protected SettingsParserInterface $settingsParser,
         protected JwtFactoryInterface $jwtFactory,
     ) {
-        $this->sites = $this->settingsParser->getSites();
-        $this->staticTokens = $this->settingsParser->getStaticTokens();
     }
 
-    /**
-     * Extract credentials from the request.
-     *
-     * @param \Symfony\Component\HttpFoundation\Request $request
-     *   The request from which to extract credentials.
-     *
-     * @return array
-     *   An array of credential info, including:
-     *    - token: The raw token.
-     *    - jwt: The parsed JWT.
-     *    - name: The name of the user being auth'd.
-     *    - roles: The roles as which the user is being auth'd.
-     */
     protected function getCredentials(Request $request) : array
     {
-        // Check headers
-        $token = $request->headers->get(static::HEADER);
+        $token = $this->jwtFactory->loadFromRequest($request);
+        $payload = $token->getPayload();
 
-        // Chop off the leading "bearer " from the token
-        $token = substr($token, strlen(static::PREFIX));
-        $this->logger->debug("Token: $token");
-
-        // Check if this is a static token
-        if (isset($this->staticTokens[$token])) {
-            $staticToken = $this->staticTokens[$token];
-            return [
-                'token' => $staticToken['token'],
-                'jwt' => null,
-                'name' => $staticToken['user'],
-                'roles' => $staticToken['roles']
-            ];
-        }
-
-        // Decode token
-        try {
-            $jwt = $this->jwtFactory->load($token);
-        } catch (\InvalidArgumentException $exception) {
-            throw new UnauthorizedHttpException('', 'Invalid token.', $exception);
-        }
-
-        // Check correct properties
-        $payload = $jwt->getPayload();
-
-        return [
-            'token' => $token,
-            'jwt' => $jwt,
-            'name' => $payload['sub'] ?? null,
-            'roles' => $payload['roles'] ?? null,
-        ];
-    }
-
-    /**
-     * Check the extracted credentials.
-     *
-     * @param array $credentials
-     *   Array of credentials including:
-     *   - token: The raw token.
-     *   - jwt: The parsed JWT.
-     *   - name: The name of the user being auth'd.
-     *   - roles: The roles as which the user is being auth'd.
-     */
-    protected function checkCredentials(array $credentials) : void
-    {
-        // If this is a static token then no more verification needed
-        if ($credentials['jwt'] === null) {
-            $this->logger->info('Logged in with static token: {0}', [$credentials['name']]);
-            return;
-        }
-
-        $jwt = $credentials['jwt'];
-        $payload = $jwt->getPayload();
-
-        // Check and warn of all missing claims before rejecting.
         $missing_claims = [];
-        foreach (static::REQUIRED_CLAIMS as $claim) {
-            if (!isset($payload[$claim])) {
-                $missing_claims[] = $claim;
+        foreach (static::REQUIRED_CLAIMS as $required_claim) {
+            if (!isset($payload->{$required_claim})) {
+                $missing_claims[] = $required_claim;
             }
         }
 
@@ -142,22 +64,20 @@ class JwtAuthenticator extends AbstractAuthenticator implements LoggerAwareInter
               '@claims' => implode(', ', $missing_claims),
             ]));
         }
-        if ($jwt->isExpired()) {
-            throw new UnauthorizedHttpException('', 'Token has expired.');
+
+        if (!$token->isValid()) {
+            throw new UnauthorizedHttpException('', 'JWT is not valid.');
         }
 
-        $url = $payload['iss'];
-        if (isset($this->sites[$url])) {
-            $site = $this->sites[$url];
-        } elseif (isset($this->sites['default'])) {
-            $site = $this->sites['default'];
-        } else {
-            throw new UnauthorizedHttpException('', 'Failed to identify token key.');
+        if ($token->isExpired()) {
+            throw new UnauthorizedHttpException('', 'JWT is expired.');
         }
 
-        if (!$jwt->isValid($site['key'], $site['algorithm'])) {
-            throw new UnauthorizedHttpException('', 'The token\'s signature does not appear to be valid.');
-        }
+        return [
+            'token' => $token,
+            'name' => $payload->sub ?? null,
+            'roles' => $payload->roles ?? null,
+        ];
     }
 
     /**
@@ -203,13 +123,18 @@ class JwtAuthenticator extends AbstractAuthenticator implements LoggerAwareInter
      */
     public function authenticate(Request $request) : Passport
     {
-        $credentials = $this->getCredentials($request);
-        $this->checkCredentials($credentials);
-
-        $passport = new SelfValidatingPassport(new UserBadge($credentials['name'], function ($name) use ($credentials) {
-            return new InMemoryUser($name, null, $credentials['roles']);
-        }));
-        $passport->setAttribute('roles', $credentials['roles']);
-        return $passport;
+        try {
+            $credentials = $this->getCredentials($request);
+            $passport = new SelfValidatingPassport(
+                new UserBadge($credentials['name'], function ($name) use ($credentials) {
+                    return new InMemoryUser($name, null, $credentials['roles']);
+                }),
+            );
+            $passport->setAttribute('roles', $credentials['roles']);
+            return $passport;
+        } catch (\InvalidArgumentException|JwtException $e) {
+            throw new UnauthorizedHttpException('', previous: $e);
+        }
     }
+
 }

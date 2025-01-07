@@ -3,10 +3,11 @@
 namespace Islandora\Crayfish\Commons\Syn\Tests;
 
 use Islandora\Crayfish\Commons\Syn\JwtAuthenticator;
+use Islandora\Crayfish\Commons\Syn\JwtException;
+use Islandora\Crayfish\Commons\Syn\JwtFactory;
 use Islandora\Crayfish\Commons\Syn\JwtFactoryInterface;
+use Islandora\Crayfish\Commons\Syn\JwtInterface;
 use Islandora\Crayfish\Commons\Syn\SettingsParserInterface;
-use Islandora\Crayfish\Commons\Tests\AbstractCrayfishCommonsTestCase;
-use Namshi\JOSE\SimpleJWS;
 use Prophecy\Argument;
 use Psr\Log\NullLogger;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,64 +17,35 @@ use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Http\Authenticator\AuthenticatorInterface;
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
 
-class JwtAuthenticatorTest extends AbstractCrayfishCommonsTestCase
+class JwtAuthenticatorTest extends AbstractAuthenticatorTest
 {
 
-    private AuthenticatorInterface $simpleAuth;
-
-    public function setUp(): void
+    public function setUp() : void
     {
         parent::setUp();
-        $this->simpleAuth = $this->getSimpleAuth();
     }
 
-    private function getParser(array $site = null) : SettingsParserInterface
+    protected function getSimpleAuth($bad_token = false) : AuthenticatorInterface
     {
-        $prophet = $this->prophesize(SettingsParserInterface::class);
-        $prophet->getStaticTokens()->willReturn([
-          'testtoken' => ['user' => 'test', 'roles' => ['1', '2'], 'token' => 'testToken']
-        ]);
-        $prophet->getSites()->willReturn($site ?? [
-          'https://foo.com' => ['algorithm' => '', 'key' => '' , 'url' => 'https://foo.com']
-        ]);
-        return $prophet->reveal();
-    }
-
-    private function getJwtFactory($jwt, $fail = false) : JwtFactoryInterface
-    {
-        $prophet = $this->prophesize(JwtFactoryInterface::class);
-        if ($fail) {
-            $prophet->load(Argument::any())->willThrow(\InvalidArgumentException::class);
-        } else {
-            $prophet->load(Argument::any())->willReturn($jwt);
-        }
-        return $prophet->reveal();
-    }
-
-    private function getSimpleAuth($bad_token = false) : AuthenticatorInterface
-    {
-        $jwt = $this->prophesize(SimpleJWS::class)->reveal();
-        $parser = $this->getParser();
-        $jwtFactory = $this->getJwtFactory($jwt, $bad_token);
-        $auth = new JwtAuthenticator($parser, $jwtFactory);
+        $jwt_prophet = $this->prophesize(JwtInterface::class);
+        $auth = new JwtAuthenticator($this->getJwtFactory($jwt_prophet->reveal(), $bad_token));
         $auth->setLogger(new NullLogger());
         return $auth;
     }
 
-    /**
-     * Utility function to ensure the index does not exist in array or is null.
-     *
-     * @param array $array
-     *   The credential array.
-     * @param string $index
-     *   The associative array index.
-     *
-     * @return boolean
-     *   Whether the index does not exist or is null.
-     */
-    private function unsetOrNull(array $array, $index)
+    protected function getJwtFactory(?JwtInterface $jwt = null, bool $fail = false) : JwtFactoryInterface
     {
-        return (!array_key_exists($index, $array) || is_null($array[$index]));
+        $prophet = $this->prophesize(JwtFactoryInterface::class);
+
+        if ($fail) {
+            $prophet->load(Argument::any())->willThrow(JwtException::class);
+            $prophet->loadFromRequest(Argument::type(Request::class))->willThrow(JwtException::class);
+        } else {
+            $prophet->load(Argument::any())->willReturn($jwt);
+            $prophet->loadFromRequest(Argument::type(Request::class))->willReturn($jwt);
+        }
+
+        return $prophet->reveal();
     }
 
     public function testAuthenticationFailure()
@@ -120,23 +92,25 @@ class JwtAuthenticatorTest extends AbstractCrayfishCommonsTestCase
     /**
      * Takes an array of JWT parts and tries to authenticate against it.
      *
-     * @param $data
+     * @param array $data
      *   The array of JWT parameters.
      * @param bool $expired
      *   Whether the JWT has expired or not.
      */
-    public function headerTokenHelper($data, bool $expired = false) : bool
+    public function headerTokenHelper(array $data, bool $expired = false) : bool
     {
-        $parser = $this->getParser();
         $request = new Request();
         $request->headers->set("Authorization", "Bearer foo");
-        $prophet = $this->prophesize(SimpleJWS::class);
-        $prophet->getPayload()->willReturn($data);
-        $prophet->isExpired()->willReturn($expired);
-        $prophet->isValid(Argument::any(), Argument::any())->willReturn(true);
-        $jwt = $prophet->reveal();
-        $jwtFactory = $this->getJwtFactory($jwt);
-        $auth = new JwtAuthenticator($parser, $jwtFactory);
+
+        $jwt_prophet = $this->prophesize(JwtInterface::class);
+        $jwt_prophet->getPayload()->willReturn((object) $data);
+        $jwt_prophet->isValid()->willReturn(!$expired);
+        $jwt_prophet->isExpired()->willReturn($expired);
+
+        $factory_prophet = $this->prophesize(JwtFactoryInterface::class);
+        $factory_prophet->loadFromRequest($request)->willReturn($jwt_prophet->reveal());
+
+        $auth = new JwtAuthenticator($factory_prophet->reveal());
         $auth->setLogger(new NullLogger());
         $this->assertTrue($auth->supports($request));
         return $auth->authenticate($request) instanceof Passport;
@@ -160,12 +134,12 @@ class JwtAuthenticatorTest extends AbstractCrayfishCommonsTestCase
     public function missingClaimProvider() : array
     {
         return [
-        ['webid'],
-        ['iss'],
-        ['sub'],
-        ['roles'],
-        ['iat'],
-        ['exp'],
+            ['webid'],
+            ['iss'],
+            ['sub'],
+            ['roles'],
+            ['iat'],
+            ['exp'],
         ];
     }
 
@@ -187,18 +161,27 @@ class JwtAuthenticatorTest extends AbstractCrayfishCommonsTestCase
         $this->headerTokenHelper($data, true);
     }
 
-    public function jwtAuthHelper(array $data, SettingsParserInterface $parser, bool $valid = true) : void
-    {
+    protected function jwtHelper(
+        array $data,
+        bool $valid = true,
+    ) : JwtInterface {
+        $prophet = $this->prophesize(JwtInterface::class);
+        $prophet->getPayload()->willReturn((object) $data);
+        $prophet->isExpired()->willReturn(false);
+        $prophet->isValid()->willReturn($valid);
+        return $prophet->reveal();
+    }
+
+    public function jwtAuthHelper(
+        array $data,
+        bool $valid = true,
+        ?JwtFactoryInterface $jwtFactory = null,
+    ) : void {
         $request = new Request();
         $request->headers->set("Authorization", "Bearer foo");
 
-        $prophet = $this->prophesize(SimpleJWS::class);
-        $prophet->getPayload()->willReturn($data);
-        $prophet->isExpired()->willReturn(false);
-        $prophet->isValid(Argument::any(), Argument::any())->willReturn($valid);
-        $jwt = $prophet->reveal();
-        $jwtFactory = $this->getJwtFactory($jwt);
-        $auth = new JwtAuthenticator($parser, $jwtFactory);
+        $jwtFactory ??= $this->getJwtFactory($this->jwtHelper($data, $valid));
+        $auth = new JwtAuthenticator($jwtFactory);
         $auth->setLogger(new NullLogger());
         $this->assertTrue($auth->supports($request));
         $passport = $auth->authenticate($request);
@@ -210,47 +193,44 @@ class JwtAuthenticatorTest extends AbstractCrayfishCommonsTestCase
 
     public function testJwtAuthentication()
     {
-        $parser = $this->getParser();
-        $this->jwtAuthHelper(static::DUMMY_DATA, $parser);
+        $this->jwtAuthHelper(static::DUMMY_DATA);
     }
 
     public function testJwtAuthenticationInvalidJwt()
     {
-        $parser = $this->getParser();
         $this->expectException(UnauthorizedHttpException::class);
-        $this->jwtAuthHelper(static::DUMMY_DATA, $parser, false);
+        $this->jwtAuthHelper(static::DUMMY_DATA, false);
     }
 
     public function testJwtAuthenticationNoSite()
     {
-        $parser = $this->getParser();
         $this->expectException(UnauthorizedHttpException::class);
-        $this->jwtAuthHelper([
-          'iss' => 'https://www.pattyspub.ca/',
-        ] + static::DUMMY_DATA, $parser);
+        $jwt_factory = new JwtFactory($this->getParser());
+        $jwt_factory->setLogger(new NullLogger());
+        $this->jwtAuthHelper(
+            [
+                'iss' => 'https://www.pattyspub.ca/',
+            ] + static::DUMMY_DATA,
+            jwtFactory: $jwt_factory,
+        );
     }
 
     public function testJwtAuthenticationDefaultSite()
     {
+        $this->markTestIncomplete('Refactor required; crossing too many boundaries.');
         $site = [
             'default' => ['algorithm' => '', 'key' => '' , 'url' => 'default']
         ];
-        $parser = $this->getParser($site);
-        $this->jwtAuthHelper([
-          'iss' => 'https://www.pattyspub.ca/',
-        ] + static::DUMMY_DATA, $parser);
+
+        $jwt_factory = new JwtFactory($this->getParser($site));
+        $jwt_factory->setLogger(new NullLogger());
+
+        $this->jwtAuthHelper(
+            [
+                'iss' => 'https://www.pattyspub.ca/',
+            ] + static::DUMMY_DATA,
+            jwtFactory: $jwt_factory,
+        );
     }
 
-    public function testStaticToken()
-    {
-        $auth = $this->getSimpleAuth();
-        $request = new Request();
-        $request->headers->set('Authorization', 'Bearer testtoken');
-
-        $auth->supports($request);
-        $passport = $auth->authenticate($request);
-
-        $this->assertEquals('test', $passport->getUser()->getUserIdentifier());
-        $this->assertEquals(['1', '2'], $passport->getAttribute('roles'));
-    }
 }

@@ -7,9 +7,9 @@
         "ext-openssl": "*",
         "ext-simplexml": "*",
         "psr/log": "^1.0.1",
-        "namshi/jose": "^7.2",
         "symfony/security-bundle": "^5",
-        "symfony/flex": "^1 || ^2"
+        "symfony/flex": "^1 || ^2",
+        "firebase/php-jwt": "^6.10"
     },
     "require-dev": {
         "islandora/crayfish-commons": "^3 || ^4",

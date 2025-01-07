@@ -2,7 +2,7 @@
 
 namespace Islandora\Crayfish\Commons\Syn;
 
-use Namshi\JOSE\JWS;
+use Symfony\Component\HttpFoundation\Request;
 
 interface JwtFactoryInterface
 {
@@ -12,8 +12,11 @@ interface JwtFactoryInterface
      * @param string $jwt
      *   The token to load/parse.
      *
-     * @return \Namshi\JOSE\JWS
+     * @return \Islandora\Crayfish\Commons\Syn\JwtInterface
      *   The loaded/parsed token.
      */
-    public function load(string $jwt) : JWS;
+    public function load(string $jwt) : JwtInterface;
+
+    public function loadFromRequest(Request $request) : JwtInterface;
+
 }

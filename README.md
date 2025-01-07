@@ -3,7 +3,7 @@
 
 ## Introduction
 
-Syn parsing removed with Crayfish-Commons 4.x, (to be) re-implemented on top of Lexik JWT.
+Syn parsing removed with Crayfish-Commons 4.x, (to be) re-implemented on top of Lexik JWT; however, this left some use cases uncovered with respect to multi-tenacy.
 
 ## Requirements
 
@@ -57,8 +57,6 @@ Having problems or solved a problem? Check out the Islandora google groups for a
 * [Islandora Dev Group](https://groups.google.com/forum/?hl=en&fromgroups#!forum/islandora-dev)
 
 ## Maintainers
-
-* [Eli Zoller](https://github.com/elizoller)
 
 This project has been sponsored by:
 * UPEI
