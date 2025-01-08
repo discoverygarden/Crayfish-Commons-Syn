@@ -2,6 +2,7 @@
 
 namespace Islandora\Crayfish\Commons\Syn\DependencyInjection;
 
+use Islandora\Crayfish\Commons\Syn\SettingsParserInterface;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\Extension;
@@ -23,7 +24,7 @@ class IslandoraCrayfishCommonsSynExtension extends Extension
 
         $config = $this->processConfiguration(new Configuration(), $configs);
 
-        $container->getDefinition('islandora_crayfish_commons_syn.settings_parser')
+        $container->getDefinition(SettingsParserInterface::class)
           ->replaceArgument(0, $config['config_xml']);
     }
 }
