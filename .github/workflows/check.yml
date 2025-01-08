@@ -54,8 +54,6 @@ jobs:
           restore-keys: ${{ steps.extcache.outputs.key }}
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
-        env:
-          COMPOSER_AUTH_JSON: ${{secrets.PRIVATE_PACKAGIST_AUTH_ACCESS}}
         with:
           php-version: ${{ matrix.php-version }}
           extensions: ${{ env.PHP_EXTENSIONS }}
