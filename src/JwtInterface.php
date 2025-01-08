@@ -11,5 +11,4 @@ interface JwtInterface
     public function isValid() : bool;
 
     public function isExpired() : bool;
-
 }

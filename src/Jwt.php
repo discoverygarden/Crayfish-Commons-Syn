@@ -32,5 +32,4 @@ class Jwt implements JwtInterface
     {
         return $this->expired;
     }
-
 }

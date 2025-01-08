@@ -232,5 +232,4 @@ class JwtAuthenticatorTest extends AbstractAuthenticatorTest
             jwtFactory: $jwt_factory,
         );
     }
-
 }

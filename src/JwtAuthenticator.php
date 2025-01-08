@@ -136,5 +136,4 @@ class JwtAuthenticator extends AbstractAuthenticator implements LoggerAwareInter
             throw new UnauthorizedHttpException('', previous: $e);
         }
     }
-
 }

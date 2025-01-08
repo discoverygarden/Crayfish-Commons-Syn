@@ -71,5 +71,4 @@ class StaticTokenAuthenticator extends AbstractAuthenticator implements LoggerAw
             Response::HTTP_UNAUTHORIZED,
         );
     }
-
 }
