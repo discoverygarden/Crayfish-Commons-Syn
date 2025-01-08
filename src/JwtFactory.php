@@ -52,7 +52,7 @@ class JwtFactory implements JwtFactoryInterface, LoggerAwareInterface
         return $this->load($this->getBearerToken($request));
     }
 
-    protected function getTokenPayload(string $token) : object
+    protected function getUnvalidatedTokenPayload(string $token) : object
     {
         $parts = explode('.', $token);
         if (($count = count($parts)) !== 3) {
@@ -67,7 +67,7 @@ class JwtFactory implements JwtFactoryInterface, LoggerAwareInterface
     {
         $issuer = '';
         try {
-            $unvalidated_payload = $this->getTokenPayload($token);
+            $unvalidated_payload = $this->getUnvalidatedTokenPayload($token);
             if (($issuer = $unvalidated_payload?->iss) && ($site = ($this->sites[$issuer] ?? null))) {
                 $this->logger->debug('Using site/issuer {issuer}', [
                   'issuer' => $issuer,
