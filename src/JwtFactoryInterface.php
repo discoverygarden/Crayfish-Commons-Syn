@@ -18,5 +18,4 @@ interface JwtFactoryInterface
     public function load(string $jwt) : JwtInterface;
 
     public function loadFromRequest(Request $request) : JwtInterface;
-
 }
