@@ -55,15 +55,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         env:
-          COMPOSER_AUTH_JSON: |
-            {
-              "http-basic": {
-                "repo.packagist.com": {
-                  "username": "${{ fromJSON(secrets.PRIVATE_PACKAGIST_AUTH_ACCESS)['http-basic']['repo.packagist.com']['username'] }}",
-                  "password":  "${{ fromJSON(secrets.PRIVATE_PACKAGIST_AUTH_ACCESS)['http-basic']['repo.packagist.com']['password'] }}"
-                }
-              }
-            }
+          COMPOSER_AUTH_JSON: ${{secrets.PRIVATE_PACKAGIST_AUTH_ACCESS}}
         with:
           php-version: ${{ matrix.php-version }}
           extensions: ${{ env.PHP_EXTENSIONS }}
