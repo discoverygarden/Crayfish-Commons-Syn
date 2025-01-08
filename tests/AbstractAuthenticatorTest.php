@@ -19,7 +19,7 @@ abstract class AbstractAuthenticatorTest extends AbstractCrayfishCommonsTestCase
 
     abstract protected function getSimpleAuth() : AuthenticatorInterface;
 
-    protected function getParser(array $site = null) : SettingsParserInterface
+    protected function getParser(?array $site = null) : SettingsParserInterface
     {
         $prophet = $this->prophesize(SettingsParserInterface::class);
         $prophet->getStaticTokens()->willReturn([

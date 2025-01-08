@@ -36,6 +36,7 @@
         ],
         "test": [
             "@check",
+            "@putenv SYMFONY_PHPUNIT_VERSION=9.6",
             "simple-phpunit"
         ]
     },
