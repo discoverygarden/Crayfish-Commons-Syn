@@ -22,11 +22,16 @@ services:
         public: true
         class: Islandora\Crayfish\Commons\Syn\JwtFactory
 
-    islandora_crayfish_commons_syn.jwt.authenticator:
+    Islandora\Crayfish\Commons\Syn\JwtAuthenticator:
         public: true
         class: Islandora\Crayfish\Commons\Syn\JwtAuthenticator
-    islandora_crayfish_commons_syn.static_token.authenticator:
+    islandora_crayfish_commons_syn.jwt.authenticator:
+        alias: Islandora\Crayfish\Commons\Syn\JwtAuthenticator
+
+    Islandora\Crayfish\Commons\Syn\StaticTokenAuthenticator:
         public: true
         class: Islandora\Crayfish\Commons\Syn\StaticTokenAuthenticator
+    islandora_crayfish_commons_syn.static_token.authenticator:
+        alias: Islandora\Crayfish\Commons\Syn\StaticTokenAuthenticator
 
 
