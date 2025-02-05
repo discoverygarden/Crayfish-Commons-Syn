@@ -1,20 +1,32 @@
 {
     "name": "discoverygarden/crayfish-commons-syn",
     "description": "Islandora Crayfish Syn integration",
+    "type": "symfony-bundle",
     "require": {
+        "ext-dom": "*",
+        "ext-openssl": "*",
+        "ext-simplexml": "*",
         "psr/log": "^1.0.1",
-        "namshi/jose": "^7.2"
+        "symfony/security-bundle": "^5",
+        "symfony/flex": "^1 || ^2",
+        "firebase/php-jwt": "^6.10"
     },
     "require-dev": {
-        "islandora/crayfish-commons": "^4",
+        "islandora/crayfish-commons": "^3 || ^4",
+        "mikey179/vfsstream": "^1.6",
         "phpspec/prophecy-phpunit": "^2.0",
         "sebastian/phpcpd": "^6.0",
         "squizlabs/php_codesniffer": "^3.0",
-        "mikey179/vfsstream": "^1.6"
+        "symfony/phpunit-bridge": "^5"
     },
     "autoload": {
         "psr-4": {
-            "Islandora\\Crayfish\\Commons\\": ""
+            "Islandora\\Crayfish\\Commons\\Syn\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Islandora\\Crayfish\\Commons\\Syn\\Tests\\": "tests/"
         }
     },
     "scripts": {
@@ -24,8 +36,23 @@
         ],
         "test": [
             "@check",
+            "@putenv SYMFONY_PHPUNIT_VERSION=9.6",
             "simple-phpunit"
         ]
     },
-    "license": "MIT"
+    "conflict": {
+        "symfony/symfony": "*"
+    },
+    "extra": {
+      "symfony": {
+          "allow-contrib": true,
+          "require": "5.4.*"
+      }
+    },
+    "license": "MIT",
+    "config": {
+        "allow-plugins": {
+            "symfony/flex": true
+        }
+    }
 }

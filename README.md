@@ -3,7 +3,7 @@
 
 ## Introduction
 
-Syn parsing removed with Crayfish-Commons 4.x, (to be) re-implemented on top of Lexik JWT.
+Syn parsing removed with Crayfish-Commons 4.x, (to be) re-implemented on top of Lexik JWT; however, this left some use cases uncovered with respect to multi-tenacy.
 
 ## Requirements
 
@@ -19,7 +19,30 @@ composer require discoverygarden/crayfish-commons-syn
 ```
 
 ## Configuration
-There is no related configuration as it serves as a dependency for  microservices.
+
+Into your main `config/packages/security.yaml` (or equivalent):
+
+* Ensure/set `security.enable_authenticator_manager` to `true`
+* Ensure a user provider exists:
+    ```yaml
+    security:
+      [...]
+      providers:
+        users_in_memory:
+          memory: ~
+    ```
+
+* Have the main firewall use the user provider, and reference our custom authenticator:
+    ```yaml
+    security:
+      [...]
+      firewalls:
+        main:
+          anonymous: false
+          provider: users_in_memory
+          custom_authenticators:
+            - islandora_crayfish_commons_syn.jwt.authenticator
+    ```
 
 ## Documentation
 
@@ -34,8 +57,6 @@ Having problems or solved a problem? Check out the Islandora google groups for a
 * [Islandora Dev Group](https://groups.google.com/forum/?hl=en&fromgroups#!forum/islandora-dev)
 
 ## Maintainers
-
-* [Eli Zoller](https://github.com/elizoller)
 
 This project has been sponsored by:
 * UPEI

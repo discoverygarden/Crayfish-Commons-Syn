@@ -19,7 +19,7 @@
 
     <testsuites>
         <testsuite name="Crayfish Commons Tests">
-            <directory>Tests</directory>
+            <directory>tests</directory>
         </testsuite>
     </testsuites>
 
@@ -28,7 +28,7 @@
             <directory suffix=".php">.</directory>
         </include>
         <exclude>
-            <directory>Tests</directory>
+            <directory>tests</directory>
             <directory>vendor</directory>
         </exclude>
         <report>
