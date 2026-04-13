@@ -10,7 +10,6 @@
         "symfony/security-bundle": "^5",
         "symfony/flex": "^1 || ^2",
         "firebase/php-jwt": "^7.0.5",
-        "phpunit/phpunit": "^9.6.33",
         "symfony/http-foundation": "^5.4.50"
     },
     "require-dev": {
@@ -19,7 +18,8 @@
         "phpspec/prophecy-phpunit": "^2.0",
         "sebastian/phpcpd": "^6.0",
         "squizlabs/php_codesniffer": "^3.0",
-        "symfony/phpunit-bridge": "^5"
+        "symfony/phpunit-bridge": "^5",
+        "phpunit/phpunit": "^9.6.33"
     },
     "autoload": {
         "psr-4": {
