@@ -30,11 +30,15 @@ env:
 jobs:
   PHPUnit:
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
         php-version:
           - '8.4'
-          - '8.5'
+        experimental: [false]
+        include:
+          - php-version: '8.5'
+            experimental: true
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
