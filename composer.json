@@ -10,7 +10,8 @@
         "symfony/security-bundle": "^5",
         "symfony/flex": "^1 || ^2",
         "firebase/php-jwt": "^7.0.5",
-        "symfony/http-foundation": "^5.4.50"
+        "symfony/http-foundation": "^5.4.50",
+        "php": ">=8.4"
     },
     "require-dev": {
         "islandora/crayfish-commons": "^3 || ^4",
