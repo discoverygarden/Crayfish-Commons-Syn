@@ -25,12 +25,8 @@
 
     <coverage processUncoveredFiles="true">
         <include>
-            <directory suffix=".php">.</directory>
+            <directory>src</directory>
         </include>
-        <exclude>
-            <directory>tests</directory>
-            <directory>vendor</directory>
-        </exclude>
         <report>
             <clover outputFile="clover.xml"/>
         </report>
